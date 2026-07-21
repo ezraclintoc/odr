@@ -1,0 +1,17 @@
+# Epsilon — large marketing data aggregator. Email opt-out under CCPA.
+id: epsilon
+name: Epsilon
+homepage: https://www.epsilon.com
+tier: additional
+recheck_days: 120
+notes: "Aggregator feeding downstream marketers; worth suppressing early."
+method: email
+to: privacy@epsilon.com
+subject: "CCPA deletion and opt-out request — {{full_name}}"
+template: ccpa_deletion
+extra_body: >
+  Please also suppress my information from any marketing audiences or data
+  products you license to third parties.
+confirmation:
+  kind: email_reply
+  note: "Watch {{email}} for Epsilon's reply; they may request verification."

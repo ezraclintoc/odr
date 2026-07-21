@@ -1,0 +1,17 @@
+# Intelius — people-search broker (PeopleConnect network). Suppression flow.
+# One PeopleConnect suppression request also covers TruthFinder, Instant
+# Checkmate, and US Search.
+id: intelius
+name: Intelius
+homepage: https://www.intelius.com
+tier: additional
+recheck_days: 60
+notes: "Shares the PeopleConnect suppression system with several sibling sites."
+method: manual
+opt_out_url: https://suppression.peopleconnect.us/optout
+steps:
+  - "Go to https://suppression.peopleconnect.us/optout"
+  - "Search for your record matching {{full_name}} and select it."
+  - "Enter {{email}} and submit the suppression request."
+  - "Click the verification link PeopleConnect emails you (expires quickly)."
+  - "This one request also suppresses TruthFinder, Instant Checkmate, and US Search."

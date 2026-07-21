@@ -1,0 +1,27 @@
+# PeopleFinders — people-search broker. Web-form opt-out + email confirm.
+id: peoplefinders
+name: PeopleFinders
+homepage: https://www.peoplefinders.com
+tier: additional
+recheck_days: 60
+notes: >
+  Search, select your record, submit, then confirm via email.
+  Selectors unverified as of 2026-07-21.
+method: web_form
+opt_out_url: https://www.peoplefinders.com/opt-out
+steps:
+  - action: human_step
+    prompt: "Search for {{full_name}} and select the record that is yours."
+  - action: fill
+    selector: "input[name='email']"
+    value: "{{email}}"
+  - action: human_step
+    prompt: "Solve any CAPTCHA, then continue."
+  - action: click
+    selector: "button[type='submit']"
+  - action: wait_for
+    selector: ".confirmation, .success"
+confirmation:
+  kind: email_link
+  note: "Click the link PeopleFinders emails to {{email}}."
+  expires_hours: 48

@@ -1,0 +1,27 @@
+# USPhoneBook — people-search / reverse-phone-lookup broker.
+id: usphonebook
+name: USPhoneBook
+homepage: https://www.usphonebook.com
+tier: additional
+recheck_days: 60
+notes: >
+  Paste your record URL into the opt-out form and confirm via email.
+  Selectors unverified as of 2026-07-21.
+method: web_form
+opt_out_url: https://www.usphonebook.com/opt-out
+steps:
+  - action: human_step
+    prompt: "Find your listing for {{full_name}} and paste its URL into the opt-out form."
+  - action: fill
+    selector: "input[name='email']"
+    value: "{{email}}"
+  - action: human_step
+    prompt: "Solve the CAPTCHA, then continue."
+  - action: click
+    selector: "button[type='submit']"
+  - action: wait_for
+    selector: ".confirmation"
+confirmation:
+  kind: email_link
+  note: "Click the link USPhoneBook emails to {{email}}."
+  expires_hours: 24

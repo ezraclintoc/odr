@@ -1,0 +1,16 @@
+# TruthFinder — background-report broker (PeopleConnect network).
+id: truthfinder
+name: TruthFinder
+homepage: https://www.truthfinder.com
+tier: additional
+recheck_days: 60
+notes: >
+  Uses the shared PeopleConnect suppression flow — the same request also covers
+  Intelius, Instant Checkmate, and US Search. See also [[intelius]].
+method: manual
+opt_out_url: https://www.truthfinder.com/opt-out/
+steps:
+  - "Go to https://www.truthfinder.com/opt-out/ (or https://suppression.peopleconnect.us/optout)."
+  - "Search for your record matching {{full_name}} and select it."
+  - "Enter {{email}} and submit the suppression request."
+  - "Click the verification link PeopleConnect emails you (expires quickly)."

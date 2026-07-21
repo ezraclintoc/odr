@@ -1,0 +1,25 @@
+# Nuwber — people-search broker. Web-form opt-out via your profile link.
+id: nuwber
+name: Nuwber
+homepage: https://nuwber.com
+tier: additional
+recheck_days: 60
+notes: >
+  Find your profile, paste its link into the removal form, confirm via email.
+  Selectors unverified as of 2026-07-21.
+method: web_form
+opt_out_url: https://nuwber.com/removal/link
+steps:
+  - action: human_step
+    prompt: "Find your Nuwber profile for {{full_name}} and paste its link into the form."
+  - action: fill
+    selector: "input[name='email']"
+    value: "{{email}}"
+  - action: click
+    selector: "button[type='submit']"
+  - action: wait_for
+    selector: ".confirmation"
+confirmation:
+  kind: email_link
+  note: "Click the link Nuwber emails to {{email}}."
+  expires_hours: 24

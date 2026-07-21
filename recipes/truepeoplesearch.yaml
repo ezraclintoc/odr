@@ -1,0 +1,27 @@
+# TruePeopleSearch — high-traffic free people-search site. Web-form opt-out.
+id: truepeoplesearch
+name: TruePeopleSearch
+homepage: https://www.truepeoplesearch.com
+tier: essential
+recheck_days: 45
+notes: >
+  Find your record, paste its URL into the removal form, solve the CAPTCHA.
+  They email a confirmation link. Selectors unverified as of 2026-07-21.
+method: web_form
+opt_out_url: https://www.truepeoplesearch.com/removal
+steps:
+  - action: human_step
+    prompt: "Find your listing for {{full_name}} and paste its URL into the removal form."
+  - action: fill
+    selector: "input[name='email']"
+    value: "{{email}}"
+  - action: human_step
+    prompt: "Solve the CAPTCHA, then continue."
+  - action: click
+    selector: "button#submit-btn"
+  - action: wait_for
+    selector: ".confirmation"
+confirmation:
+  kind: email_link
+  note: "Click the link TruePeopleSearch emails to {{email}}."
+  expires_hours: 24

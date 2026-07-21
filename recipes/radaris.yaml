@@ -1,0 +1,15 @@
+# Radaris — people-search broker with a hostile, account-gated opt-out.
+id: radaris
+name: Radaris
+homepage: https://radaris.com
+tier: offline-only
+recheck_days: 60
+notes: "Requires claiming/controlling your profile before you can hide it."
+method: manual
+opt_out_url: https://radaris.com/control/privacy
+steps:
+  - "Search Radaris for {{full_name}} and open the profile that is yours."
+  - "Click 'Control Information' / 'Make my profile private' on the listing."
+  - "Verify ownership by the phone or email code Radaris sends."
+  - "In the privacy control panel, choose to hide/remove all listed information."
+  - "Save. Removal can take a few days; re-check to confirm."

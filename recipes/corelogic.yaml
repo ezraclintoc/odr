@@ -1,0 +1,16 @@
+# CoreLogic — property/consumer data aggregator. Email/mail opt-out.
+id: corelogic
+name: CoreLogic
+homepage: https://www.corelogic.com
+tier: additional
+recheck_days: 120
+notes: >
+  Property-data aggregator. Honors CCPA requests; may direct you to a form or
+  postal address in their reply.
+method: email
+to: privacy@corelogic.com
+subject: "CCPA deletion and opt-out request — {{full_name}}"
+template: ccpa_deletion
+confirmation:
+  kind: email_reply
+  note: "Watch {{email}} for CoreLogic's reply and any follow-up steps."

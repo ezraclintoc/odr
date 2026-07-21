@@ -1,0 +1,16 @@
+# MyLife — reputation/people-search broker. Notoriously hostile opt-out.
+id: mylife
+name: MyLife
+homepage: https://www.mylife.com
+tier: offline-only
+recheck_days: 90
+notes: >
+  MyLife often requires a phone call to complete removal and may resist email
+  requests. Keep a record of your request in case you need to escalate.
+method: manual
+opt_out_url: https://www.mylife.com
+steps:
+  - "Email privacy@mylife.com requesting deletion of your profile for {{full_name}} at {{email}} under CCPA."
+  - "If no response in a few days, call MyLife at 1-888-704-1900 and request removal."
+  - "Ask for written confirmation and note the date and representative."
+  - "If they refuse a lawful opt-out, keep records for a regulator complaint."

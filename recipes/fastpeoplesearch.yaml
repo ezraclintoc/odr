@@ -1,0 +1,23 @@
+# FastPeopleSearch — free people-search site (TruePeopleSearch network).
+id: fastpeoplesearch
+name: FastPeopleSearch
+homepage: https://www.fastpeoplesearch.com
+tier: essential
+recheck_days: 45
+notes: >
+  Find your record and paste its URL into the removal form. No email confirm
+  in most cases — removal is immediate. Selectors unverified as of 2026-07-21.
+method: web_form
+opt_out_url: https://www.fastpeoplesearch.com/removal
+steps:
+  - action: human_step
+    prompt: "Find your listing for {{full_name}} and paste its URL into the removal form."
+  - action: human_step
+    prompt: "Solve the CAPTCHA, then continue."
+  - action: click
+    selector: "button#removal-button"
+  - action: wait_for
+    selector: ".removal-success"
+confirmation:
+  kind: none
+  note: "Removal usually applies within a few hours; re-check to confirm."

@@ -1,0 +1,27 @@
+# BeenVerified — major people-search broker. Web-form opt-out + email confirm.
+id: beenverified
+name: BeenVerified
+homepage: https://www.beenverified.com
+tier: essential
+recheck_days: 60
+notes: >
+  Search for your record on the opt-out page, open it, then confirm via the
+  email link. Selectors unverified as of 2026-07-21 — check before live runs.
+method: web_form
+opt_out_url: https://www.beenverified.com/app/optout/search
+steps:
+  - action: human_step
+    prompt: "Search for {{full_name}}, find your record, and open it."
+  - action: fill
+    selector: "input[type='email']"
+    value: "{{email}}"
+  - action: human_step
+    prompt: "Solve any CAPTCHA shown, then continue."
+  - action: click
+    selector: "button[type='submit']"
+  - action: wait_for
+    selector: ".optout-confirmation, .confirmation"
+confirmation:
+  kind: email_link
+  note: "Click the confirmation link BeenVerified emails to {{email}}."
+  expires_hours: 24

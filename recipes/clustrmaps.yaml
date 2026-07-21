@@ -1,0 +1,27 @@
+# ClustrMaps — address/people-search broker. Web-form opt-out.
+id: clustrmaps
+name: ClustrMaps
+homepage: https://clustrmaps.com
+tier: additional
+recheck_days: 60
+notes: >
+  Paste your record URL into the opt-out form. Selectors unverified as of
+  2026-07-21.
+method: web_form
+opt_out_url: https://clustrmaps.com/bl/opt-out
+steps:
+  - action: human_step
+    prompt: "Find your ClustrMaps listing for {{full_name}} and paste its URL into the form."
+  - action: fill
+    selector: "input[name='email']"
+    value: "{{email}}"
+  - action: human_step
+    prompt: "Solve the CAPTCHA, then continue."
+  - action: click
+    selector: "button[type='submit']"
+  - action: wait_for
+    selector: ".confirmation"
+confirmation:
+  kind: email_link
+  note: "Click the link ClustrMaps emails to {{email}}."
+  expires_hours: 48

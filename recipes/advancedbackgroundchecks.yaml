@@ -1,0 +1,27 @@
+# Advanced Background Checks — people-search broker. Web-form opt-out.
+id: advancedbackgroundchecks
+name: Advanced Background Checks
+homepage: https://www.advancedbackgroundchecks.com
+tier: additional
+recheck_days: 60
+notes: >
+  Find your record and submit it on the removal page. Selectors unverified as
+  of 2026-07-21.
+method: web_form
+opt_out_url: https://www.advancedbackgroundchecks.com/removal
+steps:
+  - action: human_step
+    prompt: "Find your listing for {{full_name}} and open its removal page."
+  - action: fill
+    selector: "input[name='email']"
+    value: "{{email}}"
+  - action: human_step
+    prompt: "Solve the CAPTCHA, then continue."
+  - action: click
+    selector: "button[type='submit']"
+  - action: wait_for
+    selector: ".confirmation, .success"
+confirmation:
+  kind: email_link
+  note: "Click the link Advanced Background Checks emails to {{email}}."
+  expires_hours: 48
