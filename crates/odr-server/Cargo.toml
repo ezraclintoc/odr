@@ -1,0 +1,17 @@
+[package]
+name = "odr-server"
+description = "Local web dashboard for ODR: stats, progress, and the human-in-the-loop task queue"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+odr-recipes.workspace = true
+odr-engine.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+anyhow.workspace = true
+tiny_http = "0.12"

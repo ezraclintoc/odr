@@ -1,0 +1,24 @@
+[package]
+name = "odr-recipes"
+description = "Declarative broker opt-out recipe schema, loading, and validation for ODR"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[features]
+# Emit the recipe JSON Schema (pulls in serde_json). Enabled by the CLI's
+# `recipes schema` command; kept optional so the core stays lean.
+schema-gen = ["dep:serde_json"]
+
+[dependencies]
+serde.workspace = true
+serde_yaml_ng.workspace = true
+schemars.workspace = true
+thiserror.workspace = true
+walkdir.workspace = true
+serde_json = { workspace = true, optional = true }
+
+[dev-dependencies]
+serde_json.workspace = true

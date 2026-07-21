@@ -1,0 +1,26 @@
+# Copy this to `profile.yaml` and fill in your details.
+#
+#   cp profile.example.yaml profile.yaml
+#
+# profile.yaml is git-ignored and never leaves your machine. ODR fills these
+# values into broker requests in place of the {{placeholders}} in recipes.
+
+first_name: Ada
+# middle_name: Augusta        # optional; improves broker match rates
+last_name: Lovelace
+
+# The inbox where brokers will send confirmation links/replies.
+email: ada@example.com
+
+# phone: "555-0100"           # optional; some brokers match/verify on it
+
+addresses:
+  # The first address is treated as current and drives which state-privacy
+  # law a generic request cites. List prior addresses too — brokers key on
+  # address history.
+  - street: 12 Analytical Way
+    city: London
+    state: CA
+    zip: "90001"
+
+# date_of_birth: "1815-12-10" # optional; some brokers match on it

@@ -1,0 +1,16 @@
+[package]
+name = "odr-engine"
+description = "The ODR execution engine: recipe interpreter, profile, state tracking, and request generation"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+odr-recipes.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serde_yaml_ng.workspace = true
+thiserror.workspace = true
+chrono.workspace = true

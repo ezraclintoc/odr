@@ -1,0 +1,19 @@
+# Acxiom — a large data aggregator (not a people-search site). Email opt-out.
+# Acxiom honors mailed/emailed suppression requests under CCPA.
+id: acxiom
+name: Acxiom
+homepage: https://www.acxiom.com
+tier: additional
+recheck_days: 90
+notes: "Aggregator that feeds many downstream brokers; worth doing early."
+
+method: email
+to: privacy@acxiom.com
+subject: "CCPA deletion and opt-out request — {{full_name}}"
+template: ccpa_deletion
+extra_body: >
+  Please also suppress my information from any data products or audiences you
+  license to third parties.
+confirmation:
+  kind: email_reply
+  note: "Watch {{email}} for Acxiom's reply; they may ask you to confirm."

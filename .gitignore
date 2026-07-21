@@ -1,0 +1,21 @@
+/target
+Cargo.lock.bak
+
+# ODR local state — this is the user's private data. Never commit it.
+/profile.yaml
+/profile.toml
+*.odr-profile
+/state.json
+.odr/
+
+# Local Nix dev environment — personal convenience, not committed.
+# (Plain shell.nix, not a flake, so Nix can read it while it stays untracked.)
+/shell.nix
+/default.nix
+/flake.nix
+/flake.lock
+/.envrc
+/.direnv/
+
+# Local editor/assistant settings.
+/.claude/settings.local.json

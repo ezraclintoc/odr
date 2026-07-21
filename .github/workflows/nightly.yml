@@ -1,0 +1,110 @@
+name: Nightly
+
+# Rolling pre-release built from main every night (and on demand). Publishes a
+# single `nightly` release whose assets are overwritten each run, so there's
+# always a fresh build to try without cutting a real version.
+on:
+  schedule:
+    - cron: "0 6 * * *" # 06:00 UTC daily
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+  BIN: odr
+
+concurrency:
+  group: nightly
+  cancel-in-progress: true
+
+jobs:
+  # Skip the nightly build when nothing landed on main in the last 24h.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      has_changes: ${{ steps.check.outputs.has_changes }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: check
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] \
+             || [ -n "$(git log --since='24 hours ago' --oneline)" ]; then
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    needs: changes
+    if: needs.changes.outputs.has_changes == 'true'
+    name: build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest,  target: x86_64-unknown-linux-gnu, ext: "" }
+          - { os: macos-latest,   target: aarch64-apple-darwin,     ext: "" }
+          - { os: windows-latest, target: x86_64-pc-windows-msvc,   ext: ".exe" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: nightly-${{ matrix.target }}
+
+      - name: Build
+        run: cargo build --release --locked -p odr-cli --target ${{ matrix.target }}
+
+      - name: Package
+        shell: bash
+        run: |
+          name="${BIN}-nightly-${{ matrix.target }}"
+          staging="dist/$name"
+          mkdir -p "$staging"
+          cp "target/${{ matrix.target }}/release/${BIN}${{ matrix.ext }}" "$staging/"
+          cp README.md LICENSE "$staging/"
+          cp -r recipes "$staging/"
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            (cd dist && 7z a "$name.zip" "$name")
+            echo "ASSET=dist/$name.zip" >> "$GITHUB_ENV"
+          else
+            (cd dist && tar czf "$name.tar.gz" "$name")
+            echo "ASSET=dist/$name.tar.gz" >> "$GITHUB_ENV"
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nightly-${{ matrix.target }}
+          path: ${{ env.ASSET }}
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Move the `nightly` tag to current main
+        run: |
+          git tag -f nightly
+          git push -f origin nightly
+
+      - name: Publish rolling nightly pre-release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: nightly
+          name: "Nightly build"
+          prerelease: true
+          body: |
+            Rolling build from the latest `main` (${{ github.sha }}).
+            Unstable — for testing only. Use a tagged release for anything real.
+          files: dist/*
+          fail_on_unmatched_files: true

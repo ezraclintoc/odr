@@ -1,0 +1,19 @@
+# Whitepages — people-search broker with a phone-verification opt-out.
+# Their flow requires answering an automated phone call with a code, so ODR
+# can only guide the user through it rather than automate it.
+id: whitepages
+name: Whitepages
+homepage: https://www.whitepages.com
+tier: offline-only
+recheck_days: 60
+notes: "Opt-out requires receiving a verification code by phone call."
+
+method: manual
+opt_out_url: https://www.whitepages.com/suppression-requests
+steps:
+  - "Go to https://www.whitepages.com/suppression-requests"
+  - "Search for your listing and select the record that matches {{full_name}}."
+  - "Click 'Remove me' and confirm the listing is yours."
+  - "Enter a phone number where you can receive an automated call."
+  - "Answer the call and enter the verification code it reads to you."
+  - "Complete the on-screen confirmation. Removal typically applies within 24h."

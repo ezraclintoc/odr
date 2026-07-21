@@ -1,0 +1,34 @@
+# Spokeo — a high-traffic people-search broker. Web-form opt-out.
+# Verified: 2026-07-20. If this breaks, the form selectors are the usual suspect.
+id: spokeo
+name: Spokeo
+homepage: https://www.spokeo.com
+tier: essential
+recheck_days: 60
+notes: >
+  You must first find your own listing URL on spokeo.com and paste it into the
+  opt-out form. Spokeo emails a confirmation link that expires quickly.
+
+method: web_form
+opt_out_url: https://www.spokeo.com/optout
+steps:
+  - action: human_step
+    prompt: >
+      Search Spokeo for yourself, open your listing, and copy its URL. You'll
+      paste it into the next field.
+  - action: fill
+    selector: "input[name='url']"
+    value: "" # left blank — the human pastes their listing URL here
+  - action: fill
+    selector: "input[name='email']"
+    value: "{{email}}"
+  - action: human_step
+    prompt: "Solve the CAPTCHA shown on the page, then continue."
+  - action: click
+    selector: "button[type='submit']"
+  - action: wait_for
+    selector: ".optout-confirmation"
+confirmation:
+  kind: email_link
+  note: "Click the confirmation link Spokeo emails to {{email}}."
+  expires_hours: 24
