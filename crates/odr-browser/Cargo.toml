@@ -1,0 +1,15 @@
+[package]
+name = "odr-browser"
+description = "Live browser driver for ODR: drives a real Chrome via CDP (chromiumoxide) behind the sync BrowserDriver trait"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+odr-engine.workspace = true
+serde_json.workspace = true
+chromiumoxide = { version = "0.7", default-features = false, features = ["tokio-runtime"] }
+tokio = { version = "1", features = ["rt-multi-thread", "time", "macros"] }
+futures = "0.3"

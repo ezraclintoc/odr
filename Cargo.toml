@@ -4,6 +4,7 @@ members = [
     "crates/odr-recipes",
     "crates/odr-engine",
     "crates/odr-server",
+    "crates/odr-browser",
     "crates/odr-cli",
 ]
 
@@ -19,6 +20,7 @@ rust-version = "1.85"
 odr-recipes = { path = "crates/odr-recipes" }
 odr-engine = { path = "crates/odr-engine" }
 odr-server = { path = "crates/odr-server" }
+odr-browser = { path = "crates/odr-browser" }
 
 # Shared third-party
 serde = { version = "1", features = ["derive"] }

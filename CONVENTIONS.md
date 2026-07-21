@@ -26,6 +26,7 @@ stay on the same page. Keep it short; change it by PR when reality changes.
 ```
 crates/odr-recipes   schema, loading, validation (no IO against brokers)
 crates/odr-engine    interpreter, profile, state, email, browser + human seams
+crates/odr-browser   live browser driver (chromiumoxide/CDP); `live` feature
 crates/odr-server    local web dashboard + human-in-the-loop task queue
 crates/odr-cli       the `odr` binary (thin; logic belongs in the crates)
 recipes/             one YAML file per broker (community-maintained data)

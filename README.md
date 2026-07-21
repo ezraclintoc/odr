@@ -42,6 +42,7 @@ Three crates:
 |-------|----------------|
 | [`odr-recipes`](crates/odr-recipes) | The declarative broker-opt-out schema, loading, and validation. No broker-specific logic. |
 | [`odr-engine`](crates/odr-engine) | Interprets recipes: fills your profile into requests, drives the browser, generates deletion emails, tracks state. |
+| [`odr-browser`](crates/odr-browser) | Live browser driver — a real Chrome driven over CDP (chromiumoxide), behind the engine's `BrowserDriver` trait. |
 | [`odr-server`](crates/odr-server) | Local web dashboard — progress stats and the live human-in-the-loop task queue (`odr serve`). |
 | [`odr-cli`](crates/odr-cli) | The `odr` command. A thin shell over the engine so a GUI can reuse everything. |
 
@@ -92,7 +93,7 @@ seam is what lets ODR run headless on a server later — see
 |---------|--------------|
 | `odr brokers [--tier <t>]` | List known brokers and their priority tier. |
 | `odr plan <broker>` | Show exactly what a removal would do — browser steps, or the full email, or manual instructions. Touches nothing. |
-| `odr remove <broker> [--dry-run]` | Run the opt-out and record it. (`--dry-run` until the live browser driver lands.) |
+| `odr remove <broker> [--dry-run] [--attach <url>]` | Run the opt-out and record it. Web-form brokers drive a real Chrome (`--attach http://127.0.0.1:9222` to use a Chrome you started with `--remote-debugging-port=9222`); `--dry-run` previews without a browser. |
 | `odr status` | Per-broker status and what's due for a re-check. |
 | `odr serve [--addr host:port]` | Launch the web dashboard (progress + human-in-the-loop task queue). |
 | `odr recipes check` | Validate every recipe. |
@@ -132,7 +133,7 @@ confirmation:
 - [x] Email deletion-request generation (CCPA / GDPR / state law)
 - [x] CLI: `brokers`, `plan`, `remove --dry-run`, `status`, `recipes`
 - [x] Web dashboard (`odr serve`): progress stats + live human-in-the-loop queue
-- [ ] **Live browser driver** (`chromiumoxide` over CDP, attaching to the user's Chrome)
+- [x] Live browser driver (`chromiumoxide` over CDP — launches or attaches to Chrome)
 - [ ] Reappearance verification scans (`odr verify`)
 - [ ] Confirmation-email inbox helper (links expire in 24–48h)
 - [ ] Regulator-complaint generation for non-compliant brokers

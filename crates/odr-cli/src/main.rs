@@ -10,9 +10,10 @@ use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 
 use odr_engine::{
-    execute, AutoApprove, DryRunBrowser, JsonStore, Outcome, Profile, StateStore, Status,
+    execute, AutoApprove, BrowserDriver, ConsolePrompter, DryRunBrowser, HumanInterface, JsonStore,
+    Outcome, Profile, StateStore, Status,
 };
-use odr_recipes::{load_dir, LoadedRecipe, Tier};
+use odr_recipes::{load_dir, Flow, LoadedRecipe, Tier};
 
 /// Open Data Removal — free, local-first removal of your personal data from
 /// data brokers.
@@ -57,6 +58,11 @@ enum Command {
         /// Print actions instead of driving a real browser / sending email.
         #[arg(long)]
         dry_run: bool,
+        /// Attach to an already-running Chrome's DevTools endpoint instead of
+        /// launching one (e.g. http://127.0.0.1:9222). Start Chrome with
+        /// --remote-debugging-port=9222 first.
+        #[arg(long, value_name = "ENDPOINT")]
+        attach: Option<String>,
     },
 
     /// Show per-broker removal status and what's due.
@@ -89,7 +95,11 @@ fn main() -> Result<()> {
     match &cli.command {
         Command::Brokers { tier } => cmd_brokers(&cli, tier.as_deref()),
         Command::Plan { broker } => cmd_plan(&cli, broker),
-        Command::Remove { broker, dry_run } => cmd_remove(&cli, broker, *dry_run),
+        Command::Remove {
+            broker,
+            dry_run,
+            attach,
+        } => cmd_remove(&cli, broker, *dry_run, attach.as_deref()),
         Command::Status => cmd_status(&cli),
         Command::Serve { addr } => cmd_serve(&cli, addr),
         Command::Recipes(RecipesCmd::Check) => cmd_recipes_check(&cli),
@@ -194,38 +204,105 @@ fn cmd_plan(cli: &Cli, broker: &str) -> Result<()> {
     Ok(())
 }
 
-fn cmd_remove(cli: &Cli, broker: &str, dry_run: bool) -> Result<()> {
-    if !dry_run {
-        // The real browser driver isn't wired up yet in this scaffold.
-        anyhow::bail!(
-            "live removal needs the browser driver (not yet wired up).\n\
-             Run `odr plan {broker}` or `odr remove {broker} --dry-run` for now."
-        );
-    }
-
+fn cmd_remove(cli: &Cli, broker: &str, dry_run: bool, attach: Option<&str>) -> Result<()> {
     let loaded = find_recipe(cli, broker)?;
     let profile = load_profile(cli)?;
-    let mut browser = DryRunBrowser::default();
-    let mut human = AutoApprove::default();
-    let outcome = execute(&loaded.recipe, &profile, &mut browser, &mut human)?;
+    let id = &loaded.recipe.id;
 
-    if matches!(outcome, Outcome::SkippedByUser) {
-        println!("skipped {}", loaded.recipe.id);
-        return Ok(());
+    // Only web-form recipes need a browser; email/manual don't, so we never
+    // launch Chrome just to draft an email.
+    let is_web_form = matches!(loaded.recipe.flow, Flow::WebForm(_));
+    let live = !dry_run && is_web_form;
+
+    // Live web-form runs drive a real browser and prompt on the terminal; dry
+    // runs (and non-browser flows) preview with the recording browser.
+    let mut live_browser;
+    let mut dry_browser = DryRunBrowser::default();
+    let browser: &mut dyn BrowserDriver = if live {
+        live_browser = make_live_browser(attach)?;
+        &mut live_browser
+    } else {
+        &mut dry_browser
+    };
+
+    let mut auto = AutoApprove::default();
+    let mut console = ConsolePrompter;
+    let human: &mut dyn HumanInterface = if dry_run { &mut auto } else { &mut console };
+
+    if live {
+        println!("Opening a browser to opt out of {}…", loaded.recipe.name);
+    }
+    let outcome = execute(&loaded.recipe, &profile, browser, human)?;
+
+    match &outcome {
+        Outcome::SkippedByUser => {
+            println!("Skipped {id}.");
+            return Ok(());
+        }
+        Outcome::FormSubmitted { .. } => {
+            let how = if dry_run {
+                "[dry-run] would submit"
+            } else {
+                "Submitted"
+            };
+            println!("{how} the opt-out form for {}.", loaded.recipe.name);
+        }
+        Outcome::EmailReady { email, .. } => {
+            println!(
+                "Send this email to opt out of {} — ODR won't send it for you:\n",
+                loaded.recipe.name
+            );
+            println!("To: {}", email.to);
+            println!("Subject: {}\n", email.subject);
+            println!("{}\n", email.body);
+        }
+        Outcome::ManualSteps { steps } => {
+            println!("{} requires manual steps:", loaded.recipe.name);
+            for (i, s) in steps.iter().enumerate() {
+                println!("  {}. {s}", i + 1);
+            }
+        }
     }
 
     let mut store = JsonStore::open(&cli.state)?;
     let confirm_hours = outcome.confirmation().and_then(|c| c.expires_hours);
     store.mark_requested(
-        &loaded.recipe.id,
+        id,
         loaded.recipe.recheck_days,
         confirm_hours,
         chrono::Utc::now(),
     );
     store.save()?;
 
-    println!("[dry-run] recorded request for {}", loaded.recipe.id);
+    if let Some(c) = outcome.confirmation() {
+        if let Some(note) = &c.note {
+            let note = odr_engine::render(note, &profile).unwrap_or_else(|_| note.clone());
+            println!("\n⚠ Next: {note}");
+        }
+        if let Some(h) = c.expires_hours {
+            println!("  (that link expires in ~{h}h — act fast)");
+        }
+    }
     Ok(())
+}
+
+/// Build the live browser driver, launching a visible Chrome or attaching to an
+/// existing one. Only available when built with the `live` feature.
+#[cfg(feature = "live")]
+fn make_live_browser(attach: Option<&str>) -> Result<odr_browser::LocalBrowser> {
+    match attach {
+        Some(endpoint) => odr_browser::LocalBrowser::connect(endpoint),
+        None => odr_browser::LocalBrowser::launch(),
+    }
+    .map_err(|e| anyhow::anyhow!("starting browser: {e}"))
+}
+
+#[cfg(not(feature = "live"))]
+fn make_live_browser(_attach: Option<&str>) -> Result<DryRunBrowser> {
+    anyhow::bail!(
+        "this build has no live browser driver.\n\
+         Rebuild with the `live` feature, or use `--dry-run` to preview."
+    )
 }
 
 fn cmd_status(cli: &Cli) -> Result<()> {

@@ -11,10 +11,17 @@ rust-version.workspace = true
 name = "odr"
 path = "src/main.rs"
 
+[features]
+default = ["live"]
+# The live browser driver (pulls Chrome/CDP deps). Disable with
+# `--no-default-features` for a lean build when only touching recipes.
+live = ["dep:odr-browser"]
+
 [dependencies]
 odr-recipes = { workspace = true, features = ["schema-gen"] }
 odr-engine.workspace = true
 odr-server.workspace = true
+odr-browser = { workspace = true, optional = true }
 serde.workspace = true
 serde_yaml_ng.workspace = true
 clap.workspace = true
