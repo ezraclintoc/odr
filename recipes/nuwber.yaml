@@ -5,13 +5,23 @@ homepage: https://nuwber.com
 tier: additional
 recheck_days: 60
 notes: >
-  Find your profile, paste its link into the removal form, confirm via email.
-  Selectors unverified as of 2026-07-21.
+  ODR locates your profile automatically and submits its link. Search URL and
+  selectors unverified as of 2026-07-21.
 method: web_form
 opt_out_url: https://nuwber.com/removal/link
 steps:
-  - action: human_step
-    prompt: "Find your Nuwber profile for {{full_name}} and paste its link into the form."
+  - action: find_listing
+    search_url: "https://nuwber.com/search?name={{first_name}}+{{last_name}}&state={{state}}"
+    result_selector: ".search-result"
+    link_selector: "a"
+    must_match:
+      - "{{full_name}}"
+      - "{{city}}"
+  - action: navigate
+    url: https://nuwber.com/removal/link
+  - action: fill
+    selector: "input[name='url']"
+    value: "{{listing_url}}"
   - action: fill
     selector: "input[name='email']"
     value: "{{email}}"

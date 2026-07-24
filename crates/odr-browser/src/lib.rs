@@ -163,6 +163,10 @@ impl BrowserDriver for LocalBrowser {
             .map_err(cdp)
     }
 
+    fn eval(&mut self, script: &str) -> Result<String, BrowserError> {
+        self.eval_string(script)
+    }
+
     fn wait_for(&mut self, selector: &str) -> Result<(), BrowserError> {
         let page = self.page.clone();
         let selector = selector.to_string();

@@ -124,6 +124,45 @@ pub enum Step {
     /// Hand control to the user for something we won't automate — a CAPTCHA, an
     /// ID upload, a "check the box" human step. `prompt` is shown to the user.
     HumanStep { prompt: String },
+
+    /// Search the broker for the user's own record and bind its URL for later
+    /// steps — removing the single most common reason to interrupt the user.
+    ///
+    /// The engine only proceeds automatically on an *unambiguous* match: if
+    /// zero or several records match, it asks the human rather than risk
+    /// opting out a stranger's listing.
+    FindListing(FindListing),
+}
+
+/// Automatic discovery of the user's own listing on a broker's search results.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct FindListing {
+    /// The broker's search-results URL, templated from the profile — e.g.
+    /// `https://example.com/results?name={{first_name}}%20{{last_name}}`.
+    pub search_url: String,
+
+    /// CSS selector matching each result row/card on that page.
+    pub result_selector: String,
+
+    /// Selector for the link to the record, relative to a result. If the result
+    /// element is itself the link, use the same selector or `a`.
+    pub link_selector: String,
+
+    /// Every one of these (templated, case-insensitive) must appear in a
+    /// result's text for it to count as the user's record. Use enough to be
+    /// unambiguous — typically the full name plus a city or state.
+    #[serde(default)]
+    pub must_match: Vec<String>,
+
+    /// Placeholder name the found URL is bound to, usable as `{{name}}` in
+    /// later steps. Defaults to `listing_url`.
+    #[serde(default = "default_bind")]
+    pub bind: String,
+}
+
+fn default_bind() -> String {
+    "listing_url".to_string()
 }
 
 /// A templated email deletion request.

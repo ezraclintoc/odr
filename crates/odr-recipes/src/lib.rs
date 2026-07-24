@@ -16,8 +16,8 @@ pub mod schema;
 pub use loader::{load_dir, load_file, validate, LoadError, LoadedRecipe};
 pub use placeholder::Placeholder;
 pub use schema::{
-    Confirmation, ConfirmationKind, EmailFlow, EmailTemplate, Flow, ManualFlow, Recipe, Step, Tier,
-    WebFormFlow,
+    Confirmation, ConfirmationKind, EmailFlow, EmailTemplate, FindListing, Flow, ManualFlow,
+    Recipe, Step, Tier, WebFormFlow,
 };
 
 /// The JSON Schema for [`Recipe`], as a pretty-printed string.

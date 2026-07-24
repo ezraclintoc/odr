@@ -5,18 +5,25 @@ homepage: https://www.peoplefinders.com
 tier: additional
 recheck_days: 60
 notes: >
-  Search, select your record, submit, then confirm via email.
-  Selectors unverified as of 2026-07-21.
+  ODR locates your record automatically, then submits the opt-out. Search URL
+  and selectors unverified as of 2026-07-21.
 method: web_form
 opt_out_url: https://www.peoplefinders.com/opt-out
 steps:
-  - action: human_step
-    prompt: "Search for {{full_name}} and select the record that is yours."
+  - action: find_listing
+    search_url: "https://www.peoplefinders.com/name/{{first_name}}-{{last_name}}/{{state}}"
+    result_selector: ".record-card"
+    link_selector: "a"
+    must_match:
+      - "{{full_name}}"
+      - "{{city}}"
+  - action: navigate
+    url: "{{listing_url}}"
   - action: fill
     selector: "input[name='email']"
     value: "{{email}}"
   - action: human_step
-    prompt: "Solve any CAPTCHA, then continue."
+    prompt: "Solve the CAPTCHA, then continue."
   - action: click
     selector: "button[type='submit']"
   - action: wait_for

@@ -5,13 +5,24 @@ homepage: https://www.truepeoplesearch.com
 tier: essential
 recheck_days: 45
 notes: >
-  Find your record, paste its URL into the removal form, solve the CAPTCHA.
-  They email a confirmation link. Selectors unverified as of 2026-07-21.
+  ODR finds your record automatically and pastes its URL into the removal form;
+  it only asks you if the match is ambiguous. Search URL and selectors
+  unverified as of 2026-07-21.
 method: web_form
 opt_out_url: https://www.truepeoplesearch.com/removal
 steps:
-  - action: human_step
-    prompt: "Find your listing for {{full_name}} and paste its URL into the removal form."
+  - action: find_listing
+    search_url: "https://www.truepeoplesearch.com/results?name={{first_name}}+{{last_name}}&citystatezip={{city}},+{{state}}"
+    result_selector: ".card-summary"
+    link_selector: "a.detail-link"
+    must_match:
+      - "{{full_name}}"
+      - "{{city}}"
+  - action: navigate
+    url: https://www.truepeoplesearch.com/removal
+  - action: fill
+    selector: "input[name='url']"
+    value: "{{listing_url}}"
   - action: fill
     selector: "input[name='email']"
     value: "{{email}}"

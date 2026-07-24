@@ -10,8 +10,8 @@ use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 
 use odr_engine::{
-    execute, AutoApprove, BrowserDriver, ConsolePrompter, DryRunBrowser, HumanInterface, JsonStore,
-    Outcome, Profile, StateStore, Status,
+    execute, execute_with, AutoApprove, BrowserDriver, CaptchaConfig, ConsolePrompter,
+    DryRunBrowser, HumanInterface, JsonStore, Outcome, Profile, StateStore, Status,
 };
 use odr_recipes::{load_dir, Flow, LoadedRecipe, Tier};
 
@@ -63,6 +63,11 @@ enum Command {
         /// --remote-debugging-port=9222 first.
         #[arg(long, value_name = "ENDPOINT")]
         attach: Option<String>,
+        /// How to handle CAPTCHAs. `ask` always hands them to you. `auto` skips
+        /// the prompt when nothing is actually blocking and waits briefly for
+        /// self-resolving challenges, then still asks you if one remains.
+        #[arg(long, value_enum, default_value_t = CaptchaMode::Ask)]
+        captcha: CaptchaMode,
     },
 
     /// Show per-broker removal status and what's due.
@@ -79,6 +84,15 @@ enum Command {
     /// Recipe maintenance helpers.
     #[command(subcommand)]
     Recipes(RecipesCmd),
+}
+
+/// CLI spelling of [`odr_engine::CaptchaPolicy`].
+#[derive(Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
+enum CaptchaMode {
+    /// Always hand CAPTCHAs to you.
+    Ask,
+    /// Try to clear them automatically first, then ask.
+    Auto,
 }
 
 #[derive(Subcommand)]
@@ -99,7 +113,8 @@ fn main() -> Result<()> {
             broker,
             dry_run,
             attach,
-        } => cmd_remove(&cli, broker, *dry_run, attach.as_deref()),
+            captcha,
+        } => cmd_remove(&cli, broker, *dry_run, attach.as_deref(), *captcha),
         Command::Status => cmd_status(&cli),
         Command::Serve { addr } => cmd_serve(&cli, addr),
         Command::Recipes(RecipesCmd::Check) => cmd_recipes_check(&cli),
@@ -204,7 +219,13 @@ fn cmd_plan(cli: &Cli, broker: &str) -> Result<()> {
     Ok(())
 }
 
-fn cmd_remove(cli: &Cli, broker: &str, dry_run: bool, attach: Option<&str>) -> Result<()> {
+fn cmd_remove(
+    cli: &Cli,
+    broker: &str,
+    dry_run: bool,
+    attach: Option<&str>,
+    captcha_mode: CaptchaMode,
+) -> Result<()> {
     let loaded = find_recipe(cli, broker)?;
     let profile = load_profile(cli)?;
     let id = &loaded.recipe.id;
@@ -229,10 +250,17 @@ fn cmd_remove(cli: &Cli, broker: &str, dry_run: bool, attach: Option<&str>) -> R
     let mut console = ConsolePrompter;
     let human: &mut dyn HumanInterface = if dry_run { &mut auto } else { &mut console };
 
+    // `auto` only means anything against a real page — the dry-run browser can't
+    // inspect one, and the engine treats "unknown" as "ask the human".
+    let mut captcha = match captcha_mode {
+        CaptchaMode::Ask => CaptchaConfig::default(),
+        CaptchaMode::Auto => CaptchaConfig::auto(),
+    };
+
     if live {
         println!("Opening a browser to opt out of {}…", loaded.recipe.name);
     }
-    let outcome = execute(&loaded.recipe, &profile, browser, human)?;
+    let outcome = execute_with(&loaded.recipe, &profile, browser, human, &mut captcha)?;
 
     match &outcome {
         Outcome::SkippedByUser => {

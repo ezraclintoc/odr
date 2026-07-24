@@ -5,13 +5,23 @@ homepage: https://clustrmaps.com
 tier: additional
 recheck_days: 60
 notes: >
-  Paste your record URL into the opt-out form. Selectors unverified as of
-  2026-07-21.
+  ODR locates your listing automatically. Search URL and selectors unverified
+  as of 2026-07-21.
 method: web_form
 opt_out_url: https://clustrmaps.com/bl/opt-out
 steps:
-  - action: human_step
-    prompt: "Find your ClustrMaps listing for {{full_name}} and paste its URL into the form."
+  - action: find_listing
+    search_url: "https://clustrmaps.com/persons/{{first_name}}-{{last_name}}"
+    result_selector: ".person-item"
+    link_selector: "a"
+    must_match:
+      - "{{full_name}}"
+      - "{{city}}"
+  - action: navigate
+    url: https://clustrmaps.com/bl/opt-out
+  - action: fill
+    selector: "input[name='url']"
+    value: "{{listing_url}}"
   - action: fill
     selector: "input[name='email']"
     value: "{{email}}"

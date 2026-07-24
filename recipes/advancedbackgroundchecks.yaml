@@ -5,13 +5,20 @@ homepage: https://www.advancedbackgroundchecks.com
 tier: additional
 recheck_days: 60
 notes: >
-  Find your record and submit it on the removal page. Selectors unverified as
+  ODR locates your record automatically. Search URL and selectors unverified as
   of 2026-07-21.
 method: web_form
 opt_out_url: https://www.advancedbackgroundchecks.com/removal
 steps:
-  - action: human_step
-    prompt: "Find your listing for {{full_name}} and open its removal page."
+  - action: find_listing
+    search_url: "https://www.advancedbackgroundchecks.com/names/{{first_name}}-{{last_name}}_{{city}}-{{state}}"
+    result_selector: ".card"
+    link_selector: "a"
+    must_match:
+      - "{{full_name}}"
+      - "{{city}}"
+  - action: navigate
+    url: "{{listing_url}}"
   - action: fill
     selector: "input[name='email']"
     value: "{{email}}"

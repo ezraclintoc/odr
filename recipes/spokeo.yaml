@@ -6,19 +6,23 @@ homepage: https://www.spokeo.com
 tier: essential
 recheck_days: 60
 notes: >
-  You must first find your own listing URL on spokeo.com and paste it into the
-  opt-out form. Spokeo emails a confirmation link that expires quickly.
-
+  ODR finds your listing automatically and pastes its URL into the opt-out
+  form. Spokeo emails a confirmation link that expires quickly.
 method: web_form
 opt_out_url: https://www.spokeo.com/optout
 steps:
-  - action: human_step
-    prompt: >
-      Search Spokeo for yourself, open your listing, and copy its URL. You'll
-      paste it into the next field.
+  - action: find_listing
+    search_url: "https://www.spokeo.com/{{first_name}}-{{last_name}}/{{state}}/{{city}}"
+    result_selector: ".search-result, .person-card"
+    link_selector: "a"
+    must_match:
+      - "{{full_name}}"
+      - "{{city}}"
+  - action: navigate
+    url: https://www.spokeo.com/optout
   - action: fill
     selector: "input[name='url']"
-    value: "" # left blank — the human pastes their listing URL here
+    value: "{{listing_url}}"
   - action: fill
     selector: "input[name='email']"
     value: "{{email}}"

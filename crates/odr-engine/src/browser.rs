@@ -38,6 +38,14 @@ pub trait BrowserDriver {
     fn select(&mut self, selector: &str, value: &str) -> Result<(), BrowserError>;
     fn click(&mut self, selector: &str) -> Result<(), BrowserError>;
     fn wait_for(&mut self, selector: &str) -> Result<(), BrowserError>;
+
+    /// Evaluate a JavaScript expression and return its string result.
+    ///
+    /// Used to *inspect* page state the engine can't otherwise see — e.g.
+    /// whether a CAPTCHA is actually present and unsolved (see
+    /// [`crate::captcha`]). Drivers that can't run scripts return an empty
+    /// string, which callers must treat as "unknown", never as "absent".
+    fn eval(&mut self, script: &str) -> Result<String, BrowserError>;
 }
 
 /// A driver that performs no real automation but records what it was asked to
@@ -68,5 +76,11 @@ impl BrowserDriver for DryRunBrowser {
     fn wait_for(&mut self, selector: &str) -> Result<(), BrowserError> {
         self.log.push(format!("wait_for {selector}"));
         Ok(())
+    }
+    fn eval(&mut self, script: &str) -> Result<String, BrowserError> {
+        // No page to inspect. Empty means "unknown", so CAPTCHA auto-detection
+        // conservatively falls back to asking the human rather than skipping.
+        self.log.push(format!("eval {script}"));
+        Ok(String::new())
     }
 }

@@ -7,12 +7,14 @@
 use odr_recipes::{Confirmation, ConfirmationKind, Flow, ManualFlow, Recipe, Step, WebFormFlow};
 
 use crate::browser::{BrowserDriver, BrowserError};
+use crate::captcha::{self, CaptchaConfig, Resolution};
 use crate::email::{self, GeneratedEmail};
 use crate::interaction::{
     HumanInterface, HumanResponse, HumanTask, HumanTaskKind, InteractionError,
 };
+use crate::listing;
 use crate::profile::Profile;
-use crate::template::{self, RenderError};
+use crate::template::{self, Bindings, RenderError};
 
 /// Anything that can go wrong carrying out a recipe.
 #[derive(Debug, thiserror::Error)]
@@ -67,8 +69,26 @@ pub fn execute(
     browser: &mut dyn BrowserDriver,
     human: &mut dyn HumanInterface,
 ) -> Result<Outcome, ExecError> {
+    execute_with(
+        recipe,
+        profile,
+        browser,
+        human,
+        &mut CaptchaConfig::default(),
+    )
+}
+
+/// Like [`execute`], but with explicit control over how CAPTCHA gates are
+/// handled (see [`CaptchaConfig`]).
+pub fn execute_with(
+    recipe: &Recipe,
+    profile: &Profile,
+    browser: &mut dyn BrowserDriver,
+    human: &mut dyn HumanInterface,
+    captcha: &mut CaptchaConfig<'_>,
+) -> Result<Outcome, ExecError> {
     match &recipe.flow {
-        Flow::WebForm(flow) => run_web_form(&recipe.id, flow, profile, browser, human),
+        Flow::WebForm(flow) => run_web_form(&recipe.id, flow, profile, browser, human, captcha),
         Flow::Email(flow) => {
             let email = email::generate(flow, profile)?;
             Ok(Outcome::EmailReady {
@@ -86,25 +106,86 @@ fn run_web_form(
     profile: &Profile,
     browser: &mut dyn BrowserDriver,
     human: &mut dyn HumanInterface,
+    captcha: &mut CaptchaConfig<'_>,
 ) -> Result<Outcome, ExecError> {
-    browser.navigate(&template::render(&flow.opt_out_url, profile)?)?;
+    // Values discovered mid-run (e.g. the user's listing URL) that later steps
+    // can reference as {{placeholders}}.
+    let mut bindings = Bindings::new();
+
+    let page_url = template::render(&flow.opt_out_url, profile)?;
+    browser.navigate(&page_url)?;
 
     for step in &flow.steps {
         match step {
-            Step::Navigate { url } => browser.navigate(&template::render(url, profile)?)?,
+            Step::Navigate { url } => {
+                browser.navigate(&template::render_with(url, profile, &bindings)?)?
+            }
             Step::Fill { selector, value } => {
-                browser.fill(selector, &template::render(value, profile)?)?
+                browser.fill(selector, &template::render_with(value, profile, &bindings)?)?
             }
             Step::Select { selector, value } => {
-                browser.select(selector, &template::render(value, profile)?)?
+                browser.select(selector, &template::render_with(value, profile, &bindings)?)?
             }
             Step::Click { selector } => browser.click(selector)?,
             Step::WaitFor { selector } => browser.wait_for(selector)?,
+
+            Step::FindListing(find) => {
+                let search_url = template::render_with(&find.search_url, profile, &bindings)?;
+                browser.navigate(&search_url)?;
+
+                let candidates =
+                    listing::extract(browser, &find.result_selector, &find.link_selector)?;
+                let needles = find
+                    .must_match
+                    .iter()
+                    .map(|m| template::render_with(m, profile, &bindings))
+                    .collect::<Result<Vec<_>, _>>()?;
+
+                match listing::pick(&candidates, &needles) {
+                    // Unambiguous hit — no need to involve the user at all.
+                    Some(url) => {
+                        bindings.insert(find.bind.clone(), url);
+                    }
+                    // Nothing matched, or several did. Refusing to guess here is
+                    // the point: picking wrong would opt out a stranger.
+                    None => {
+                        let task = HumanTask {
+                            broker_id: broker_id.to_string(),
+                            prompt: format!(
+                                "Couldn't identify your listing automatically ({} candidate(s) \
+                                 on {search_url}). Open your own record in the browser, then \
+                                 continue.",
+                                candidates.len()
+                            ),
+                            kind: HumanTaskKind::FindListing,
+                        };
+                        if human.request(&task)? == HumanResponse::Skipped {
+                            return Ok(Outcome::SkippedByUser);
+                        }
+                        // Whatever page they landed on is their listing.
+                        let url = listing::current_url(browser)?;
+                        bindings.insert(find.bind.clone(), url);
+                    }
+                }
+            }
+
             Step::HumanStep { prompt } => {
+                let kind = classify(prompt);
+
+                // For CAPTCHA gates, the policy may clear the step without ever
+                // bothering the user — e.g. nothing is actually blocking, or the
+                // challenge resolved itself. Anything else falls through to the
+                // human, which always works.
+                if kind == HumanTaskKind::Captcha
+                    && captcha::resolve(captcha, browser, &page_url)? == Resolution::Clear
+                {
+                    continue;
+                }
+
                 let task = HumanTask {
                     broker_id: broker_id.to_string(),
-                    prompt: template::render(prompt, profile)?,
-                    kind: classify(prompt),
+                    prompt: template::render_with(prompt, profile, &bindings)?,
+                    kind,
                 };
                 if human.request(&task)? == HumanResponse::Skipped {
                     return Ok(Outcome::SkippedByUser);

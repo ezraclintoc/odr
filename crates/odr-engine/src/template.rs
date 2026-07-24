@@ -1,5 +1,7 @@
 //! Filling `{{placeholder}}` tokens in recipe strings from a [`Profile`].
 
+use std::collections::BTreeMap;
+
 use odr_recipes::Placeholder;
 
 use crate::profile::Profile;
@@ -37,12 +39,26 @@ fn resolve(profile: &Profile, ph: Placeholder) -> Option<String> {
     }
 }
 
+/// Values discovered at run time (e.g. a listing URL found by searching), usable
+/// as `{{placeholders}}` in later steps alongside profile fields.
+pub type Bindings = BTreeMap<String, String>;
+
 /// Replace every `{{token}}` in `input` with the matching profile value.
 ///
 /// Fails on unknown tokens (a recipe typo) and on known-but-missing values (the
 /// profile lacks data this broker needs) — the latter is actionable feedback
 /// to the user, not a silent blank submission.
 pub fn render(input: &str, profile: &Profile) -> Result<String, RenderError> {
+    render_with(input, profile, &Bindings::new())
+}
+
+/// Like [`render`], but also resolves run-time [`Bindings`], which take
+/// precedence over profile fields.
+pub fn render_with(
+    input: &str,
+    profile: &Profile,
+    bindings: &Bindings,
+) -> Result<String, RenderError> {
     let mut out = String::with_capacity(input.len());
     let mut rest = input;
 
@@ -52,12 +68,16 @@ pub fn render(input: &str, profile: &Profile) -> Result<String, RenderError> {
         let end = after.find("}}").ok_or(RenderError::Unbalanced)?;
         let token = after[..end].trim();
 
-        let ph = Placeholder::from_token(token)
-            .ok_or_else(|| RenderError::UnknownPlaceholder(token.to_string()))?;
-        let value = resolve(profile, ph).ok_or_else(|| RenderError::MissingValue {
-            token: token.to_string(),
-        })?;
-        out.push_str(&value);
+        if let Some(bound) = bindings.get(token) {
+            out.push_str(bound);
+        } else {
+            let ph = Placeholder::from_token(token)
+                .ok_or_else(|| RenderError::UnknownPlaceholder(token.to_string()))?;
+            let value = resolve(profile, ph).ok_or_else(|| RenderError::MissingValue {
+                token: token.to_string(),
+            })?;
+            out.push_str(&value);
+        }
 
         rest = &after[end + 2..];
     }

@@ -5,13 +5,23 @@ homepage: https://www.usphonebook.com
 tier: additional
 recheck_days: 60
 notes: >
-  Paste your record URL into the opt-out form and confirm via email.
-  Selectors unverified as of 2026-07-21.
+  ODR locates your record automatically and submits it. Search URL and
+  selectors unverified as of 2026-07-21.
 method: web_form
 opt_out_url: https://www.usphonebook.com/opt-out
 steps:
-  - action: human_step
-    prompt: "Find your listing for {{full_name}} and paste its URL into the opt-out form."
+  - action: find_listing
+    search_url: "https://www.usphonebook.com/{{first_name}}-{{last_name}}"
+    result_selector: ".person-card"
+    link_selector: "a"
+    must_match:
+      - "{{full_name}}"
+      - "{{state}}"
+  - action: navigate
+    url: https://www.usphonebook.com/opt-out
+  - action: fill
+    selector: "input[name='url']"
+    value: "{{listing_url}}"
   - action: fill
     selector: "input[name='email']"
     value: "{{email}}"

@@ -13,16 +13,19 @@
 //! specific to any one broker — that belongs in recipes.
 
 pub mod browser;
+pub mod captcha;
 pub mod email;
 pub mod executor;
 pub mod interaction;
+pub mod listing;
 pub mod profile;
 pub mod state;
 pub mod template;
 
 pub use browser::{BrowserDriver, BrowserError, DryRunBrowser};
+pub use captcha::{CaptchaConfig, CaptchaKind, CaptchaPolicy, CaptchaSolver, CaptchaState};
 pub use email::{generate as generate_email, GeneratedEmail};
-pub use executor::{execute, ExecError, Outcome};
+pub use executor::{execute, execute_with, ExecError, Outcome};
 pub use interaction::{
     AutoApprove, ConsolePrompter, HumanInterface, HumanResponse, HumanTask, HumanTaskKind,
     InteractionError,
