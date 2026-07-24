@@ -58,7 +58,7 @@ jobs:
           key: nightly-${{ matrix.target }}
 
       - name: Build
-        run: cargo build --release --locked -p odr-cli --target ${{ matrix.target }}
+        run: cargo build --release --locked -p odr-cli --features vendored-tls --target ${{ matrix.target }}
 
       - name: Package
         shell: bash

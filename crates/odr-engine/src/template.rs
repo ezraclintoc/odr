@@ -104,6 +104,7 @@ mod tests {
                 zip: "90001".into(),
             }],
             date_of_birth: None,
+            inbox: None,
         }
     }
 

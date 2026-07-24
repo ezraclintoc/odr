@@ -73,6 +73,23 @@ enum Command {
     /// Show per-broker removal status and what's due.
     Status,
 
+    /// Open the confirmation links brokers emailed you, automatically.
+    ///
+    /// Needs an `inbox:` section in your profile. Brokers send links that
+    /// expire in 24–48h; this finds them and opens them so you don't have to.
+    Confirm {
+        /// Keep polling until every pending confirmation is done (or the
+        /// timeout passes) — useful right after a batch, since mail is slow.
+        #[arg(long)]
+        watch: bool,
+        /// Give up after this many minutes when watching.
+        #[arg(long, default_value_t = 30)]
+        timeout_mins: u64,
+        /// Only consider mail from the last N hours.
+        #[arg(long, default_value_t = 48)]
+        since_hours: i64,
+    },
+
     /// Launch the web dashboard: progress, stats, and the queue of steps that
     /// need you (CAPTCHAs, ID checks). Open the printed URL in a browser.
     Serve {
@@ -116,6 +133,11 @@ fn main() -> Result<()> {
             captcha,
         } => cmd_remove(&cli, broker, *dry_run, attach.as_deref(), *captcha),
         Command::Status => cmd_status(&cli),
+        Command::Confirm {
+            watch,
+            timeout_mins,
+            since_hours,
+        } => cmd_confirm(&cli, *watch, *timeout_mins, *since_hours),
         Command::Serve { addr } => cmd_serve(&cli, addr),
         Command::Recipes(RecipesCmd::Check) => cmd_recipes_check(&cli),
         Command::Recipes(RecipesCmd::Schema) => cmd_recipes_schema(),
@@ -368,6 +390,109 @@ fn cmd_serve(cli: &Cli, addr: &str) -> Result<()> {
     let profile = load_profile(cli)?;
     odr_server::run(addr, recipes, profile, cli.state.clone())
         .with_context(|| format!("running dashboard on {addr}"))
+}
+
+/// Open broker confirmation links found in the user's mailbox.
+///
+/// Brokers email links that expire in 24–48h and a full run can produce a dozen
+/// of them — the last big chunk of manual work. With `inbox:` configured, ODR
+/// finds each one and opens it.
+#[cfg(feature = "inbox")]
+fn cmd_confirm(cli: &Cli, watch: bool, timeout_mins: u64, since_hours: i64) -> Result<()> {
+    use std::time::{Duration, Instant};
+
+    let profile = load_profile(cli)?;
+    let inbox_cfg = profile.inbox.as_ref().context(
+        "no `inbox:` section in your profile — add one so ODR can open broker \
+         confirmation links for you (see profile.example.yaml)",
+    )?;
+    let recipes = load_recipes(cli)?;
+
+    let deadline = Instant::now() + Duration::from_secs(timeout_mins * 60);
+    loop {
+        // Which brokers are still waiting on a click?
+        let pending: Vec<&LoadedRecipe> = {
+            let store = JsonStore::open(&cli.state)?;
+            recipes
+                .iter()
+                .filter(|r| store.get(&r.recipe.id).status == Status::AwaitingConfirmation)
+                .collect()
+        };
+
+        if pending.is_empty() {
+            println!("Nothing is awaiting confirmation.");
+            return Ok(());
+        }
+
+        println!(
+            "Checking {} for {} pending confirmation(s)…",
+            inbox_cfg.username,
+            pending.len()
+        );
+        let mut inbox = odr_inbox::Inbox::connect(inbox_cfg)?;
+        let mut opened = 0usize;
+        let mut still_waiting = Vec::new();
+
+        for loaded in &pending {
+            let id = &loaded.recipe.id;
+            match inbox.find_link(id, &loaded.recipe.homepage, since_hours)? {
+                Some(found) => {
+                    open_link(&found.url)?;
+                    let mut store = JsonStore::open(&cli.state)?;
+                    store.mark_confirmed(id, chrono::Utc::now());
+                    store.save()?;
+                    println!("  ✓ {id} — opened confirmation link");
+                    opened += 1;
+                }
+                None => still_waiting.push(id.clone()),
+            }
+        }
+        inbox.logout();
+
+        println!(
+            "Confirmed {opened}, still waiting on {}.",
+            still_waiting.len()
+        );
+        if still_waiting.is_empty() {
+            return Ok(());
+        }
+        if !watch {
+            println!("No mail yet for: {}", still_waiting.join(", "));
+            println!("Re-run with --watch to keep checking as it arrives.");
+            return Ok(());
+        }
+        if Instant::now() >= deadline {
+            println!(
+                "Timed out after {timeout_mins}m still waiting on: {}",
+                still_waiting.join(", ")
+            );
+            return Ok(());
+        }
+        std::thread::sleep(Duration::from_secs(60));
+    }
+}
+
+#[cfg(not(feature = "inbox"))]
+fn cmd_confirm(_: &Cli, _: bool, _: u64, _: i64) -> Result<()> {
+    anyhow::bail!("this build has no inbox support; rebuild with the `inbox` feature")
+}
+
+/// Open a confirmation URL. Uses a real browser when available so any
+/// JavaScript or cookie handling on the broker's page works as it would for a
+/// person clicking the link.
+#[cfg(all(feature = "inbox", feature = "live"))]
+fn open_link(url: &str) -> Result<()> {
+    let mut browser = odr_browser::LocalBrowser::launch()
+        .map_err(|e| anyhow::anyhow!("starting browser: {e}"))?;
+    browser
+        .navigate(url)
+        .map_err(|e| anyhow::anyhow!("opening {url}: {e}"))
+}
+
+#[cfg(all(feature = "inbox", not(feature = "live")))]
+fn open_link(url: &str) -> Result<()> {
+    println!("  → open this yourself (no browser in this build): {url}");
+    Ok(())
 }
 
 fn cmd_recipes_check(cli: &Cli) -> Result<()> {

@@ -1,0 +1,26 @@
+[package]
+name = "odr-inbox"
+description = "Reads broker confirmation emails over IMAP so ODR can click expiring links for you"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[features]
+default = []
+# Build OpenSSL from source and link it statically, so the released binary needs
+# no system OpenSSL on any target. Off by default because it costs every
+# contributor a multi-minute OpenSSL compile (and needs perl + make); the
+# release workflow turns it on.
+vendored-tls = ["dep:openssl", "openssl/vendored"]
+
+[dependencies]
+odr-engine.workspace = true
+# `imap` only supports native-tls, so TLS comes from the system by default.
+imap = "2.4"
+native-tls = "0.2"
+openssl = { version = "0.10", optional = true }
+mailparse = "0.15"
+chrono.workspace = true
+thiserror.workspace = true

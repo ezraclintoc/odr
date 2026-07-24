@@ -61,6 +61,7 @@ profile.yaml    ──▶                   guide       (manual broker)
 | `odr-recipes` | Recipe schema, loading, validation. **No** broker-specific logic, no IO against brokers. |
 | `odr-engine` | The interpreter + profile, templating, state, email generation. Owns the two abstraction seams below. |
 | `odr-browser` | Live `BrowserDriver` over CDP (chromiumoxide). Behind the CLI's default `live` feature. |
+| `odr-inbox` | Reads broker confirmation emails over IMAP (`odr confirm`). Behind the default `inbox` feature. |
 | `odr-server` | Local web dashboard (`odr serve`) + human-in-the-loop task queue. |
 | `odr-cli` | The `odr` binary. Thin — logic belongs in the libraries so a GUI can reuse it. |
 
@@ -107,6 +108,14 @@ engine fills from the local profile (valid tokens: `odr-recipes/src/placeholder.
 - **Nix files are intentionally git-ignored**, so the dev shell is `shell.nix`
   (plain nix-shell), *not* a flake — flakes only see git-tracked files. `.envrc`
   uses `use nix`. Don't convert it to a flake without also tracking the files.
+- **`odr-inbox` needs OpenSSL** (the `imap` crate only supports native-tls), so
+  build inside `nix-shell` on NixOS. Release binaries use `--features
+  vendored-tls` to statically link it; don't make that the default, it costs
+  every contributor a multi-minute OpenSSL build.
+- **Minimising human interruptions is a product requirement**, not a nice-to-
+  have. Before adding a `human_step` to a recipe, check whether `find_listing`,
+  the CAPTCHA policy, or `odr confirm` already covers it. The unavoidable floor
+  is the `manual`-method brokers (phone/fax/ID).
 - The CLI binary is stale after `cargo test`; run `cargo build` before smoke-
   testing `./target/debug/odr`.
 

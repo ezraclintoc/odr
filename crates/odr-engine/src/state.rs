@@ -71,6 +71,16 @@ pub trait StateStore {
     fn set(&mut self, broker_id: &str, record: BrokerRecord);
     fn all(&self) -> &BTreeMap<String, BrokerRecord>;
 
+    /// Record that a broker's request is confirmed — the confirmation link was
+    /// clicked (by the user or by ODR) and nothing further is pending.
+    fn mark_confirmed(&mut self, broker_id: &str, now: DateTime<Utc>) {
+        let mut rec = self.get(broker_id);
+        rec.status = Status::Confirmed;
+        rec.confirmed_at = Some(now);
+        rec.confirm_by = None;
+        self.set(broker_id, rec);
+    }
+
     /// Mark a broker requested now, scheduling its re-check `recheck_days` out
     /// and, when relevant, a confirmation deadline `confirm_hours` out.
     fn mark_requested(

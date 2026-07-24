@@ -13,10 +13,12 @@ machine, as *you*:
 - **First-party requests.** Opt-outs come from your browser, your IP, and your
   email — so brokers can't route you to the slow "agent" queue (2–14 days vs.
   45–90 for agents).
-- **Human-in-the-loop.** ODR drives *your* visible browser and hands control
-  back to you for CAPTCHAs and ID checks. In Consumer Reports' 2024 study,
-  user-submitted opt-outs were the single most effective method measured (70%),
-  beating every paid service.
+- **Human-in-the-loop, but barely.** ODR drives *your* visible browser and only
+  stops for things it genuinely shouldn't do alone. It finds your listing on
+  each broker itself, skips CAPTCHAs that aren't actually blocking, and (given
+  IMAP access) clicks the expiring confirmation links brokers email you. In
+  Consumer Reports' 2024 study, user-submitted opt-outs were the single most
+  effective method measured (70%), beating every paid service.
 - **Recurring by design.** Brokers repopulate every 30–90 days, so removal only
   works as a cycle. ODR tracks per-broker state and tells you what's due.
 - **Community recipes.** Each broker's opt-out is a small YAML file anyone can
@@ -95,6 +97,7 @@ seam is what lets ODR run headless on a server later — see
 | `odr plan <broker>` | Show exactly what a removal would do — browser steps, or the full email, or manual instructions. Touches nothing. |
 | `odr remove <broker> [--dry-run] [--attach <url>]` | Run the opt-out and record it. Web-form brokers drive a real Chrome (`--attach http://127.0.0.1:9222` to use a Chrome you started with `--remote-debugging-port=9222`); `--dry-run` previews without a browser. |
 | `odr status` | Per-broker status and what's due for a re-check. |
+| `odr confirm [--watch]` | Find the confirmation links brokers emailed you and open them. Needs `inbox:` in your profile. |
 | `odr serve [--addr host:port]` | Launch the web dashboard (progress + human-in-the-loop task queue). |
 | `odr recipes check` | Validate every recipe. |
 | `odr recipes schema` | Emit the recipe JSON Schema (for editor autocomplete / CI). |

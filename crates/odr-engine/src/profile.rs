@@ -29,6 +29,53 @@ pub struct Profile {
     /// the user may prefer not to hand it over.
     #[serde(default)]
     pub date_of_birth: Option<String>,
+
+    /// Optional IMAP access so ODR can click broker confirmation links for you.
+    /// Without it, you click them yourself.
+    #[serde(default)]
+    pub inbox: Option<InboxConfig>,
+}
+
+/// How to reach the mailbox that receives broker confirmation emails.
+///
+/// Brokers email links that expire in 24–48h, and a full run can produce a
+/// dozen of them — the single largest remaining source of manual work. Given
+/// read access to the inbox, ODR opens those links itself.
+///
+/// This is a plain data type so the profile stays dependency-free; `odr-inbox`
+/// consumes it. Credentials never leave the machine, and using a dedicated
+/// address (or an app-specific password) keeps the blast radius small — brokers
+/// only ever see this address anyway.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct InboxConfig {
+    pub imap_host: String,
+
+    #[serde(default = "default_imap_port")]
+    pub imap_port: u16,
+
+    pub username: String,
+
+    /// The password directly. Prefer [`Self::password_command`] so a secret
+    /// isn't sitting in a plaintext file.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub password: Option<String>,
+
+    /// A shell command printing the password on stdout, e.g.
+    /// `pass show odr/imap` or `secret-tool lookup service odr`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub password_command: Option<String>,
+
+    /// Mailbox to search.
+    #[serde(default = "default_mailbox")]
+    pub mailbox: String,
+}
+
+fn default_imap_port() -> u16 {
+    993
+}
+
+fn default_mailbox() -> String {
+    "INBOX".to_string()
 }
 
 /// A postal address.

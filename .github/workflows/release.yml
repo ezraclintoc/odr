@@ -43,11 +43,11 @@ jobs:
 
       - name: Build (cargo)
         if: ${{ !matrix.cross }}
-        run: cargo build --release --locked -p odr-cli --target ${{ matrix.target }}
+        run: cargo build --release --locked -p odr-cli --features vendored-tls --target ${{ matrix.target }}
 
       - name: Build (cross)
         if: matrix.cross
-        run: cross build --release --locked -p odr-cli --target ${{ matrix.target }}
+        run: cross build --release --locked -p odr-cli --features vendored-tls --target ${{ matrix.target }}
 
       - name: Package
         shell: bash

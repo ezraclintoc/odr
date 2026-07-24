@@ -12,16 +12,21 @@ name = "odr"
 path = "src/main.rs"
 
 [features]
-default = ["live"]
+default = ["live", "inbox"]
 # The live browser driver (pulls Chrome/CDP deps). Disable with
 # `--no-default-features` for a lean build when only touching recipes.
 live = ["dep:odr-browser"]
+# Reading broker confirmation emails over IMAP (pulls TLS deps).
+inbox = ["dep:odr-inbox"]
+# Statically link OpenSSL so released binaries need none on the host.
+vendored-tls = ["odr-inbox?/vendored-tls"]
 
 [dependencies]
 odr-recipes = { workspace = true, features = ["schema-gen"] }
 odr-engine.workspace = true
 odr-server.workspace = true
 odr-browser = { workspace = true, optional = true }
+odr-inbox = { workspace = true, optional = true }
 serde.workspace = true
 serde_yaml_ng.workspace = true
 clap.workspace = true

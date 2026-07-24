@@ -24,3 +24,26 @@ addresses:
     zip: "90001"
 
 # date_of_birth: "1815-12-10" # optional; some brokers match on it
+
+# Optional: let ODR open the confirmation links brokers email you.
+#
+# Brokers send links that expire in 24–48h, and a full run can produce a dozen
+# of them — this is the last big chunk of manual work. With IMAP access, `odr
+# confirm` finds each link and opens it for you.
+#
+# Your credentials and mail never leave this machine. ODR only ever opens links
+# on the broker's own domain, so a spoofed email can't redirect it.
+#
+# Tip: use a dedicated address (or an app-specific password). Brokers only ever
+# see the address you opt out with, so it needn't be your main one. Gmail and
+# Outlook require an app password, not your account password.
+#
+# inbox:
+#   imap_host: imap.gmail.com
+#   imap_port: 993              # optional, defaults to 993
+#   username: ada+odr@example.com
+#   # Prefer password_command so no secret sits in this file:
+#   password_command: "pass show odr/imap"
+#   # ...or, less safely:
+#   # password: "app-specific-password"
+#   mailbox: INBOX              # optional, defaults to INBOX
